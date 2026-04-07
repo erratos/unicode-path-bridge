@@ -1,0 +1,29 @@
+# Build output
+*.exe
+*.pdb
+*.dll
+
+# Test artifacts
+tests/received-path.log
+tests/test-results.log
+
+# IDE / editor
+.vs/
+*.suo
+*.user
+*.sln
+*.csproj
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Internal working docs (not part of the published project)
+PLAN.md
+
+# Claude Code
+.claude/
+
+# Test hex dump
+tests/received-path-hex.log

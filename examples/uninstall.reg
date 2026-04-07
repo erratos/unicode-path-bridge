@@ -1,0 +1,9 @@
+Windows Registry Editor Version 5.00
+
+; Unicode Path Bridge — Remove all example context menu entries
+;
+; Import this file to clean up the registry entries created by the other .reg files.
+
+[-HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\CopyPathUnicode]
+[-HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\RunMyScript]
+[-HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\OpenInVSCode]
