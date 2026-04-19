@@ -1,0 +1,34 @@
+﻿PASS  French accents
+PASS  Spaces and apostrophe
+PASS  Cyrillic
+PASS  CJK (Japanese)
+PASS  CJK (Chinese)
+PASS  Korean (Hangul)
+PASS  Arabic (RTL)
+PASS  Hebrew (RTL)
+PASS  Thai
+PASS  Emoji (folder + file icons)
+PASS  Emoji ZWJ sequence
+PASS  NFC precomposed (e-acute)
+PASS  NFD decomposed (e + combining accent)
+PASS  Ampersand in path
+PASS  Percent signs in path
+PASS  Exclamation mark (delayed expansion)
+PASS  Caret (cmd escape char)
+PASS  Parentheses in path
+PASS  Semicolons and equals
+PASS  At sign and hash
+PASS  Dollar sign (PS variable char)
+PASS  Backtick (PS escape char)
+PASS  Multiple special chars combined
+PASS  Double quotes in path
+PASS  Drive root (trailing backslash)
+PASS  UNC network path
+PASS  UNC path with spaces
+PASS  Long path (>260 chars)
+PASS  Deeply nested (many components)
+PASS  Path with only spaces in folder name
+PASS  Mixed scripts in one path
+PASS  Simple ASCII
+WARN  No-args exited with code 0
+WARN  Bad target exit code: 0
