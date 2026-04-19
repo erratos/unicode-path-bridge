@@ -119,6 +119,56 @@ fn parse_json_string_array(s: &str) -> Vec<String> {
     out
 }
 
+// --- Table-driven parity tests ---------------------------------------------
+//
+// Every case below maps to one that the original .NET / UBP test suite
+// (archive/dotnet/tests/test-paths.ps1) verified. A single argument is passed
+// through eupb → eupb-test-target and must come back byte-identical.
+
+use rstest::rstest;
+
+#[rstest]
+// --- Additional Unicode scripts ---------------------------------------------
+#[case::cjk_chinese("C:\\测试文件夹\\文件.txt")]
+#[case::korean_hangul("C:\\테스트\\파일.txt")]
+#[case::arabic_rtl("C:\\مجلد\\ملف.txt")]
+#[case::hebrew_rtl("C:\\תיקיה\\קובץ.txt")]
+#[case::thai("C:\\ทดสอบ\\ไฟล์.txt")]
+#[case::mixed_scripts("C:\\été_Тест_テスト\\file.txt")]
+// --- Emoji ZWJ sequence (verifies surrogate pair integrity) ---------------
+#[case::emoji_zwj("C:\\👨\u{200D}💻\\file.txt")]
+// --- Unicode normalization forms -------------------------------------------
+#[case::nfc_precomposed("C:\\café\\file.txt")] // U+00E9
+#[case::nfd_decomposed("C:\\cafe\u{0301}\\file.txt")] // U+0065 + U+0301
+// --- Shell metacharacters ---------------------------------------------------
+#[case::ampersand("C:\\Tom & Jerry\\episode.txt")]
+#[case::percent_signs("C:\\100% Complete\\file.txt")]
+#[case::exclamation("C:\\Important!\\urgent!.txt")]
+#[case::caret("C:\\Folder^name\\file^1.txt")]
+#[case::parentheses("C:\\Project (copy)\\file (1).txt")]
+#[case::semicolons_equals("C:\\key=value;data\\config.txt")]
+#[case::at_hash("C:\\user@domain\\#channel\\file.txt")]
+#[case::dollar_sign("C:\\$Recycle.Bin\\$file.txt")]
+#[case::backtick("C:\\folder`name\\file.txt")]
+#[case::combined_specials("C:\\Tom & Jerry (2024) [100%]!\\file.txt")]
+// --- Double quotes inside a path --------------------------------------------
+#[case::double_quotes_in_path("C:\\Dossier \"special\"\\fichier.txt")]
+// --- Path structure edge cases ---------------------------------------------
+#[case::drive_root("D:\\")]
+#[case::unc_plain("\\\\server\\share\\folder\\file.txt")]
+#[case::unc_with_spaces("\\\\server\\shared folder\\my file.txt")]
+#[case::long_path_270_chars_no_prefix(
+    "C:\\LongPath\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\SubFolder\\file_at_the_end.txt"
+)]
+#[case::deeply_nested(
+    "C:\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\a\\file.txt"
+)]
+#[case::only_spaces_in_folder("C:\\   \\file.txt")]
+fn parity_single_arg_roundtrip(#[case] path: &str) {
+    let got = run_roundtrip(&[path]);
+    assert_eq!(got, vec![path.to_string()], "path was {:?}", path);
+}
+
 #[test]
 fn target_not_found_exits_with_code_2() {
     let status = Command::cargo_bin("eupb")
