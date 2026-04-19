@@ -83,10 +83,19 @@ struct Resolved {
 }
 
 fn main() -> ExitCode {
+    // Peek for --quiet-errors before parsing so we can suppress dialogs
+    // even when clap itself rejects the argument set.
+    let raw_args: Vec<OsString> = std::env::args_os().skip(1).collect();
+    let quiet_early = raw_args
+        .iter()
+        .any(|a| a == "--quiet-errors");
+
     let parsed = match Cli::try_parse() {
         Ok(c) => c,
         Err(e) => {
-            show_dialog_info("eupb — argument error", &e.to_string());
+            if !quiet_early {
+                show_dialog_info("eupb — argument error", &e.to_string());
+            }
             return ExitCode::from(1);
         }
     };
@@ -104,19 +113,21 @@ fn main() -> ExitCode {
         return ExitCode::from(0);
     }
 
-    // Require at least a target.
-    if parsed.target_args.is_empty() {
-        show_dialog_error(
-            "eupb — usage",
-            "Usage: eupb [OPTIONS] -- <TARGET> [TARGET_ARGS...]\n\nNo target program specified.",
-        );
-        return ExitCode::from(1);
-    }
-
     // Resolve defaults (hide_console default = true, wait default = true, show_errors default = true)
-    let hide_console = if parsed.show_console { false } else { true };
+    let hide_console = !parsed.show_console;
     let wait = !parsed.no_wait;
     let show_errors = !parsed.quiet_errors;
+
+    // Require at least a target.
+    if parsed.target_args.is_empty() {
+        if show_errors {
+            show_dialog_error(
+                "eupb — usage",
+                "Usage: eupb [OPTIONS] -- <TARGET> [TARGET_ARGS...]\n\nNo target program specified.",
+            );
+        }
+        return ExitCode::from(1);
+    }
 
     let target_name = &parsed.target_args[0];
     let target = match resolve_executable(target_name) {
