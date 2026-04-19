@@ -16,8 +16,10 @@ fn main() -> ExitCode {
     let args: Vec<OsString> = std::env::args_os().skip(1).collect();
 
     // Find --out <path> anywhere; everything else is captured.
+    // --env-key NAME appends "NAME=<value>" (or "NAME=<UNSET>") after the regular args.
     let mut out_path: Option<PathBuf> = None;
     let mut captured: Vec<String> = Vec::new();
+    let mut env_keys: Vec<OsString> = Vec::new();
 
     let mut i = 0;
     while i < args.len() {
@@ -31,8 +33,26 @@ fn main() -> ExitCode {
             i += 2;
             continue;
         }
+        if a == "--env-key" {
+            if i + 1 >= args.len() {
+                eprintln!("--env-key requires a value");
+                return ExitCode::from(2);
+            }
+            env_keys.push(args[i + 1].clone());
+            i += 2;
+            continue;
+        }
         captured.push(a.to_string_lossy().into_owned());
         i += 1;
+    }
+
+    for k in &env_keys {
+        let value = std::env::var_os(k);
+        let key_str = k.to_string_lossy();
+        match value {
+            Some(v) => captured.push(format!("{}={}", key_str, v.to_string_lossy())),
+            None => captured.push(format!("{}=<UNSET>", key_str)),
+        }
     }
 
     let out = match out_path {

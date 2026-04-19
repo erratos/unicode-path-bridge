@@ -350,6 +350,223 @@ fn cwd_option_is_honored() {
     assert!(out.is_file(), "target did not produce its output");
 }
 
+// --- --set-env tests --------------------------------------------------------
+
+/// Run eupb with custom args (unlike `run_roundtrip`, no automatic `--show-console`
+/// or `--` insertion). Returns the captured list from the test target.
+fn run_with(eupb_args: &[&std::ffi::OsStr], target_args: &[&std::ffi::OsStr]) -> Vec<String> {
+    let tmp = TempDir::new().expect("tempdir");
+    let out = tmp.path().join("result.json");
+    let target = target_path();
+
+    let mut cmd = Command::cargo_bin("eupb").expect("build eupb");
+    cmd.arg("--show-console");
+    for a in eupb_args {
+        cmd.arg(a);
+    }
+    cmd.arg("--").arg(&target).arg("--out").arg(&out);
+    for a in target_args {
+        cmd.arg(a);
+    }
+    let status = cmd.status().expect("spawn eupb");
+    assert!(status.success(), "eupb exited with {:?}", status);
+
+    let data = std::fs::read_to_string(&out).expect("read result.json");
+    parse_json_string_array(&data)
+}
+
+#[test]
+fn set_env_simple_ascii() {
+    let got = run_with(
+        &["--set-env".as_ref(), "EUPB_TEST_A=hello".as_ref()],
+        &["--env-key".as_ref(), "EUPB_TEST_A".as_ref()],
+    );
+    assert_eq!(got, vec!["EUPB_TEST_A=hello".to_string()]);
+}
+
+#[test]
+fn set_env_unicode_value() {
+    let got = run_with(
+        &["--set-env".as_ref(), "EUPB_TEST_U=日本_café_🎉".as_ref()],
+        &["--env-key".as_ref(), "EUPB_TEST_U".as_ref()],
+    );
+    assert_eq!(got, vec!["EUPB_TEST_U=日本_café_🎉".to_string()]);
+}
+
+#[test]
+fn set_env_shell_metacharacters_untouched() {
+    // The whole reason --set-env exists: shells' -Command parsers can't be
+    // trusted with these, but env vars are opaque bytes to them.
+    let got = run_with(
+        &[
+            "--set-env".as_ref(),
+            "EUPB_TEST_S=a & b; c' \"d\" `e` $f %g%".as_ref(),
+        ],
+        &["--env-key".as_ref(), "EUPB_TEST_S".as_ref()],
+    );
+    assert_eq!(
+        got,
+        vec!["EUPB_TEST_S=a & b; c' \"d\" `e` $f %g%".to_string()]
+    );
+}
+
+#[test]
+fn set_env_empty_value() {
+    let got = run_with(
+        &["--set-env".as_ref(), "EUPB_TEST_E=".as_ref()],
+        &["--env-key".as_ref(), "EUPB_TEST_E".as_ref()],
+    );
+    assert_eq!(got, vec!["EUPB_TEST_E=".to_string()]);
+}
+
+#[test]
+fn set_env_multiple_flags() {
+    let got = run_with(
+        &[
+            "--set-env".as_ref(),
+            "EUPB_TEST_M1=one".as_ref(),
+            "--set-env".as_ref(),
+            "EUPB_TEST_M2=two".as_ref(),
+        ],
+        &[
+            "--env-key".as_ref(),
+            "EUPB_TEST_M1".as_ref(),
+            "--env-key".as_ref(),
+            "EUPB_TEST_M2".as_ref(),
+        ],
+    );
+    assert_eq!(
+        got,
+        vec![
+            "EUPB_TEST_M1=one".to_string(),
+            "EUPB_TEST_M2=two".to_string(),
+        ]
+    );
+}
+
+#[test]
+fn set_env_overrides_parent_var() {
+    // Seed parent env with EUPB_TEST_OVR=before, then override with --set-env.
+    let tmp = TempDir::new().expect("tempdir");
+    let out = tmp.path().join("result.json");
+    let target = target_path();
+
+    let status = Command::cargo_bin("eupb")
+        .expect("build eupb")
+        .env("EUPB_TEST_OVR", "before")
+        .arg("--show-console")
+        .arg("--set-env")
+        .arg("EUPB_TEST_OVR=after")
+        .arg("--")
+        .arg(&target)
+        .arg("--out")
+        .arg(&out)
+        .arg("--env-key")
+        .arg("EUPB_TEST_OVR")
+        .status()
+        .expect("spawn eupb");
+    assert!(status.success(), "eupb exited with {:?}", status);
+    let got = parse_json_string_array(&std::fs::read_to_string(&out).unwrap());
+    assert_eq!(got, vec!["EUPB_TEST_OVR=after".to_string()]);
+}
+
+#[test]
+fn set_env_override_is_case_insensitive() {
+    // Parent has EUPB_TEST_CASE=orig (uppercase). Override with lowercase name.
+    let tmp = TempDir::new().expect("tempdir");
+    let out = tmp.path().join("result.json");
+    let target = target_path();
+
+    let status = Command::cargo_bin("eupb")
+        .expect("build eupb")
+        .env("EUPB_TEST_CASE", "orig")
+        .arg("--show-console")
+        .arg("--set-env")
+        .arg("eupb_test_case=new")
+        .arg("--")
+        .arg(&target)
+        .arg("--out")
+        .arg(&out)
+        .arg("--env-key")
+        .arg("EUPB_TEST_CASE")
+        .arg("--env-key")
+        .arg("eupb_test_case")
+        .status()
+        .expect("spawn eupb");
+    assert!(status.success(), "eupb exited with {:?}", status);
+    let got = parse_json_string_array(&std::fs::read_to_string(&out).unwrap());
+    // Both lookups should find the new value (Windows env is case-insensitive).
+    assert_eq!(
+        got,
+        vec![
+            "EUPB_TEST_CASE=new".to_string(),
+            "eupb_test_case=new".to_string(),
+        ]
+    );
+}
+
+#[test]
+fn set_env_preserves_other_parent_vars() {
+    // Unrelated var from parent must still reach the child.
+    let tmp = TempDir::new().expect("tempdir");
+    let out = tmp.path().join("result.json");
+    let target = target_path();
+
+    let status = Command::cargo_bin("eupb")
+        .expect("build eupb")
+        .env("EUPB_TEST_KEEP", "preserved")
+        .arg("--show-console")
+        .arg("--set-env")
+        .arg("EUPB_TEST_OTHER=added")
+        .arg("--")
+        .arg(&target)
+        .arg("--out")
+        .arg(&out)
+        .arg("--env-key")
+        .arg("EUPB_TEST_KEEP")
+        .arg("--env-key")
+        .arg("EUPB_TEST_OTHER")
+        .status()
+        .expect("spawn eupb");
+    assert!(status.success(), "eupb exited with {:?}", status);
+    let got = parse_json_string_array(&std::fs::read_to_string(&out).unwrap());
+    assert_eq!(
+        got,
+        vec![
+            "EUPB_TEST_KEEP=preserved".to_string(),
+            "EUPB_TEST_OTHER=added".to_string(),
+        ]
+    );
+}
+
+#[test]
+fn set_env_missing_equals_exits_1() {
+    let status = Command::cargo_bin("eupb")
+        .expect("build eupb")
+        .arg("--quiet-errors")
+        .arg("--set-env")
+        .arg("NOEQUALS")
+        .arg("--")
+        .arg("cmd.exe")
+        .status()
+        .expect("spawn eupb");
+    assert_eq!(status.code(), Some(1));
+}
+
+#[test]
+fn set_env_empty_name_exits_1() {
+    let status = Command::cargo_bin("eupb")
+        .expect("build eupb")
+        .arg("--quiet-errors")
+        .arg("--set-env")
+        .arg("=somevalue")
+        .arg("--")
+        .arg("cmd.exe")
+        .status()
+        .expect("spawn eupb");
+    assert_eq!(status.code(), Some(1));
+}
+
 #[test]
 fn target_resolved_via_path_search() {
     let tmp = TempDir::new().expect("tempdir");

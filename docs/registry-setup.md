@@ -53,6 +53,38 @@ ready-to-import snippets.
 Delete the key you created. See [`examples/uninstall.reg`](../examples/uninstall.reg)
 for an example that removes the entries shipped here.
 
+## Passing `%V` through `powershell -Command`
+
+If your target is `powershell.exe -Command "<inline script>"` and the
+inline script needs the path, **do not** pass `%V` as a positional
+argument after `-Command`. PowerShell concatenates everything after
+`-Command` into a single expression that its own parser evaluates, so
+any of `&`, `'`, `;`, `$`, `` ` ``, `(`, `)` in the path will break it
+— silently, because `--hide-console` hides the error.
+
+Two robust options:
+
+1. **Use `-File` with a `.ps1` companion script** (PowerShell's `-File`
+   mode puts subsequent args into `$args` without re-parsing):
+
+   ```
+   "C:\Tools\eupb.exe" -- "powershell.exe" "-NoProfile" "-File" "C:\Scripts\my-script.ps1" "%V"
+   ```
+
+2. **Use `--set-env`** to plant the value in the child's environment
+   before PowerShell starts — no parser sees it:
+
+   ```
+   "C:\Tools\eupb.exe" "--set-env=EUPB_PATH=%V" -- "powershell.exe" "-NoProfile" "-Command" "Set-Clipboard -Value $env:EUPB_PATH"
+   ```
+
+   Option 2 keeps the registry entry self-contained (no external
+   `.ps1` to ship). See [`examples/copy-path.reg`](../examples/copy-path.reg).
+
+The same trap applies to any program that interprets its own command
+line (cmd.exe with `/c`, `wscript` with certain hosts, …); `--set-env`
+is the generic fix.
+
 ## Common pitfalls
 
 | Symptom | Cause | Fix |
@@ -61,3 +93,4 @@ for an example that removes the entries shipped here.
 | `DOSSIE~1` instead of `Dossier Été` | Used `%1` in the registry command | Replace with `%V` |
 | Brief black console flash | Omitted `--hide-console` or using `--show-console` | Remove `--show-console`; the default hides the window |
 | Explorer blocks until the script finishes | `eupb` waits by default | Add `--no-wait` to the command line |
+| Path with `&`, `'`, `;`, `$`… is truncated or the script silently fails | Passed as positional arg to `powershell -Command` (parser hostile) | Switch to `-File` + `.ps1`, or use `--set-env` (see section above) |

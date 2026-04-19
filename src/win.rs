@@ -66,6 +66,14 @@ pub fn launch(r: &Resolved) -> ExitCode {
 
     let cwd_wide: Option<Vec<u16>> = r.cwd.as_ref().map(|p| to_wide_nul(p.as_os_str()));
 
+    // Build an overridden environment block if --set-env was used.
+    // Must be sorted (Windows requirement for CREATE_UNICODE_ENVIRONMENT).
+    let env_block: Option<Vec<u16>> = if r.set_env.is_empty() {
+        None
+    } else {
+        Some(build_env_block(&r.set_env))
+    };
+
     let mut flags: PROCESS_CREATION_FLAGS = CREATE_UNICODE_ENVIRONMENT;
     if r.hide_console {
         flags |= CREATE_NO_WINDOW;
@@ -85,6 +93,10 @@ pub fn launch(r: &Resolved) -> ExitCode {
         None => PCWSTR(std::ptr::null()),
     };
 
+    let env_ptr: Option<*const core::ffi::c_void> = env_block
+        .as_ref()
+        .map(|b| b.as_ptr() as *const core::ffi::c_void);
+
     let result = unsafe {
         CreateProcessW(
             PCWSTR(app_name.as_ptr()),
@@ -93,7 +105,7 @@ pub fn launch(r: &Resolved) -> ExitCode {
             None,
             false,
             flags,
-            None,
+            env_ptr,
             cwd_ptr,
             &si,
             &mut pi,
@@ -179,6 +191,64 @@ fn to_wide_nul(s: &(impl AsRef<OsStr> + ?Sized)) -> Vec<u16> {
         .collect()
 }
 
+/// Build a `CREATE_UNICODE_ENVIRONMENT` block from the parent's current env,
+/// merged with the overrides (which win on case-insensitive ASCII name match,
+/// matching Windows' own semantics). The block is sorted alphabetically by
+/// uppercased name (a hard CreateProcessW requirement) and double-null
+/// terminated.
+fn build_env_block(overrides: &[(OsString, OsString)]) -> Vec<u16> {
+    // (upper_key, original_key, value) — upper_key is the sort & dedup key.
+    let mut entries: Vec<(Vec<u16>, Vec<u16>, Vec<u16>)> = Vec::new();
+
+    for (k, v) in std::env::vars_os() {
+        let k_wide: Vec<u16> = k.encode_wide().collect();
+        if k_wide.is_empty() {
+            continue;
+        }
+        // Skip the Windows legacy "=X:=..." per-drive cwd variables: they
+        // start with '=', which CreateProcessW rejects in a sorted block.
+        if k_wide[0] == b'=' as u16 {
+            continue;
+        }
+        let v_wide: Vec<u16> = v.encode_wide().collect();
+        let upper = ascii_upper_wide(&k_wide);
+        entries.push((upper, k_wide, v_wide));
+    }
+
+    for (k, v) in overrides {
+        let k_wide: Vec<u16> = k.encode_wide().collect();
+        let v_wide: Vec<u16> = v.encode_wide().collect();
+        let upper = ascii_upper_wide(&k_wide);
+        entries.retain(|(u, _, _)| *u != upper);
+        entries.push((upper, k_wide, v_wide));
+    }
+
+    entries.sort_by(|a, b| a.0.cmp(&b.0));
+
+    let mut out: Vec<u16> = Vec::new();
+    for (_, k, v) in entries {
+        out.extend_from_slice(&k);
+        out.push(b'=' as u16);
+        out.extend_from_slice(&v);
+        out.push(0);
+    }
+    // Double-null terminator (the block's own terminator).
+    out.push(0);
+    out
+}
+
+fn ascii_upper_wide(s: &[u16]) -> Vec<u16> {
+    s.iter()
+        .map(|&c| {
+            if (b'a' as u16..=b'z' as u16).contains(&c) {
+                c - (b'a' as u16 - b'A' as u16)
+            } else {
+                c
+            }
+        })
+        .collect()
+}
+
 fn format_win_error_from_result(err: &windows::core::Error) -> String {
     let code = err.code();
     let hresult_val = code.0 as u32;
@@ -232,6 +302,17 @@ fn write_log(path: &std::path::Path, r: &Resolved, cmd_line: &OsString) -> std::
     writeln!(f, "args ({}):", r.args.len())?;
     for (i, a) in r.args.iter().enumerate() {
         writeln!(f, "  [{}] {}", i, a.to_string_lossy())?;
+    }
+    if !r.set_env.is_empty() {
+        writeln!(f, "set_env ({}):", r.set_env.len())?;
+        for (k, v) in &r.set_env {
+            writeln!(
+                f,
+                "  {}={}",
+                k.to_string_lossy(),
+                v.to_string_lossy()
+            )?;
+        }
     }
     writeln!(f, "command line:")?;
     writeln!(f, "  {}", cmd_line.to_string_lossy())?;

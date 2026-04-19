@@ -16,6 +16,11 @@ Unicode Path Bridge**. Complete rewrite in Rust; the original C# /
   - `--cwd <DIR>` for the target's working directory
   - `--show-errors` / `--quiet-errors` (show is default)
   - `--log <FILE>` invocation log, UTF-8 with BOM for Notepad
+  - `--set-env NAME=VALUE` (repeatable) to set or override environment
+    variables for the target. Values are planted before `CreateProcessW`
+    so shells that re-parse their `-Command` string (PowerShell's `&`,
+    `'`, `$`, `;`…) never see them. Parent environment is inherited;
+    overrides are case-insensitive per Windows semantics.
 - Proper Microsoft C/C++ command-line argument escaping, validated by a
   `CommandLineToArgvW` round-trip test.
 - `CreateProcessW` launch with `CREATE_NO_WINDOW` and
@@ -28,9 +33,12 @@ Unicode Path Bridge**. Complete rewrite in Rust; the original C# /
   `supportedOS`, `asInvoker`, UTF-8 `activeCodePage`.
 - Test helper binary `eupb-test-target.exe` used by integration tests.
 - 29 unit tests (`tests/escape.rs`, table-driven via `rstest`) and
-  16 integration tests (`tests/integration.rs`) covering ASCII, French
+  52 integration tests (`tests/integration.rs`) covering ASCII, French
   accents, apostrophes, Cyrillic, CJK, emoji, trailing backslash + space,
-  UNC long paths, `--no-wait`, `--cwd`, `--log`, and PATH resolution.
+  UNC long paths, `--no-wait`, `--cwd`, `--log`, PATH resolution, and
+  a full `--set-env` matrix (Unicode, shell metacharacters, multiple
+  overrides, case-insensitive replacement, parent-env preservation,
+  error paths).
 
 ### Archived
 

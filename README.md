@@ -42,8 +42,30 @@ eupb options.
 | `--show-errors` | on | Show a MessageBox on launch errors |
 | `--quiet-errors` | | Suppress error dialogs; use exit codes only |
 | `--log <FILE>` | | Log invocation details (UTF-8 + BOM) |
+| `--set-env NAME=VALUE` | | Set or override an env var for the target. Repeatable. |
 | `--version`, `-V` | | Show version |
 | `--help`, `-h` | | Show help |
+
+#### `--set-env` — passing values through hostile parsers
+
+Some shells re-interpret the arguments they receive. Most notably,
+`powershell.exe -Command <string>` concatenates everything that follows
+into a single expression that its own language parser evaluates — so a
+path like `C:\Tom & Jerry\ep.txt`, passed as a positional argument, gets
+split on `&` and treated as two commands.
+
+`--set-env NAME=VALUE` plants the value in the child process's
+environment *before* `CreateProcessW`, so no shell parser ever touches
+it. The registry entry reads its own `$env:NAME` (or `%NAME%`) instead
+of a positional arg:
+
+```reg
+@="\"C:\\Tools\\eupb.exe\" \"--set-env=EUPB_PATH=%V\" -- \"powershell.exe\" \"-NoProfile\" \"-Command\" \"Set-Clipboard -Value $env:EUPB_PATH\""
+```
+
+`--set-env` can be repeated. Overrides of existing variables are
+case-insensitive (Windows env semantics). Invalid pairs (missing `=`
+or empty `NAME`) cause exit 1.
 
 ### Exit codes
 
@@ -88,11 +110,14 @@ page) is embedded automatically by `build.rs`.
 cargo test
 ```
 
-Runs 29 unit tests for `escape_arg` (table-driven, including a
-`CommandLineToArgvW` round-trip) and 16 integration tests spawning
-`eupb.exe → eupb-test-target.exe` across ASCII, Cyrillic, CJK, emoji,
-French accents, apostrophes, trailing-backslash-plus-space, UNC long
-paths, `--no-wait`, `--cwd`, `--log`, and PATH+PATHEXT resolution.
+Runs 3 library smoke tests, 29 unit tests for `escape_arg`
+(table-driven, including a `CommandLineToArgvW` round-trip) and
+52 integration tests spawning `eupb.exe → eupb-test-target.exe` across
+ASCII, Cyrillic, CJK, emoji, French accents, apostrophes,
+trailing-backslash-plus-space, UNC long paths, `--no-wait`, `--cwd`,
+`--log`, PATH+PATHEXT resolution, and the full `--set-env` matrix
+(Unicode values, shell metacharacters, multiple overrides,
+case-insensitive replacement, parent-env preservation, and error paths).
 
 ## Requirements
 

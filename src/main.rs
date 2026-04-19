@@ -58,6 +58,13 @@ struct Cli {
     #[arg(long, value_name = "FILE")]
     log: Option<PathBuf>,
 
+    /// Set or override an environment variable for the target process.
+    /// Format: `NAME=VALUE`. Repeatable. Useful to pass Unicode paths to
+    /// shells like PowerShell whose `-Command` parser would otherwise
+    /// reinterpret characters like `&`, `'`, `;` or `$`.
+    #[arg(long = "set-env", value_name = "NAME=VALUE", action = clap::ArgAction::Append)]
+    set_env: Vec<OsString>,
+
     /// Print help.
     #[arg(long, short = 'h')]
     help: bool,
@@ -80,6 +87,7 @@ struct Resolved {
     cwd: Option<PathBuf>,
     show_errors: bool,
     log: Option<PathBuf>,
+    set_env: Vec<(OsString, OsString)>,
 }
 
 fn main() -> ExitCode {
@@ -145,6 +153,16 @@ fn main() -> ExitCode {
 
     let args: Vec<OsString> = parsed.target_args.iter().skip(1).cloned().collect();
 
+    let set_env = match parse_set_env_pairs(&parsed.set_env) {
+        Ok(v) => v,
+        Err(msg) => {
+            if show_errors {
+                show_dialog_error("eupb — usage", &msg);
+            }
+            return ExitCode::from(1);
+        }
+    };
+
     let resolved = Resolved {
         target,
         args,
@@ -153,6 +171,7 @@ fn main() -> ExitCode {
         cwd: parsed.cwd,
         show_errors,
         log: parsed.log,
+        set_env,
     };
 
     #[cfg(windows)]
@@ -166,6 +185,41 @@ fn main() -> ExitCode {
         eprintln!("eupb only runs on Windows.");
         ExitCode::from(1)
     }
+}
+
+/// Parse each `--set-env` argument as `NAME=VALUE`. Splits on the **first**
+/// `=` (in UTF-16 on Windows, in bytes elsewhere — only the ASCII `=` is
+/// significant, so either produces identical results for any real input).
+/// Rejects missing `=` and empty `NAME`.
+#[cfg(windows)]
+fn parse_set_env_pairs(raws: &[OsString]) -> Result<Vec<(OsString, OsString)>, String> {
+    use std::os::windows::ffi::{OsStrExt, OsStringExt};
+    let eq = b'=' as u16;
+    let mut out = Vec::with_capacity(raws.len());
+    for raw in raws {
+        let wide: Vec<u16> = raw.encode_wide().collect();
+        let Some(pos) = wide.iter().position(|&c| c == eq) else {
+            return Err(format!(
+                "--set-env requires NAME=VALUE (got: {})",
+                raw.to_string_lossy()
+            ));
+        };
+        if pos == 0 {
+            return Err(format!(
+                "--set-env NAME cannot be empty (got: {})",
+                raw.to_string_lossy()
+            ));
+        }
+        let name = OsString::from_wide(&wide[..pos]);
+        let value = OsString::from_wide(&wide[pos + 1..]);
+        out.push((name, value));
+    }
+    Ok(out)
+}
+
+#[cfg(not(windows))]
+fn parse_set_env_pairs(_raws: &[OsString]) -> Result<Vec<(OsString, OsString)>, String> {
+    Ok(Vec::new())
 }
 
 /// Resolve a program name to an absolute path. If `name` contains a path
