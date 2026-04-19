@@ -3,8 +3,8 @@
 Cargo.lock.bak
 *.pdb
 
-# Legacy .NET build output (archived)
-archive/dotnet/*.exe
+# Archive Legacy .NET build
+.archive/
 
 # IDE / editor
 .vs/
