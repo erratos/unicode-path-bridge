@@ -1,16 +1,18 @@
 Windows Registry Editor Version 5.00
 
-; Unicode Path Bridge — Open file/folder in VS Code
+; eupb — Open file/folder in VS Code (Unicode-safe, no console flash)
 ;
-; This adds an "Open in VS Code" entry to the right-click context menu.
-; Unlike the default VS Code context menu, this works correctly with
-; Unicode paths (Cyrillic, CJK, emoji, etc.).
+; Adds an "Open in VS Code" entry to the right-click context menu. Unlike
+; the default VS Code menu entry, this works correctly with Unicode paths
+; (Cyrillic, CJK, emoji, etc.) and does not flash a console window.
 ;
-; BEFORE IMPORTING: Replace C:\\Tools\\ubp.exe with the actual path to ubp.exe
+; BEFORE IMPORTING:
+;   1. Replace C:\\Tools\\eupb.exe with the actual path to eupb.exe.
+;   2. Adjust the "Icon" path to your VS Code install location.
 
 [HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\OpenInVSCode]
 @="Open in VS Code"
-"Icon"="C:\\Users\\janot\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe,0"
+"Icon"="C:\\Users\\%USERNAME%\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe,0"
 
 [HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\OpenInVSCode\command]
-@="\"C:\\Tools\\ubp.exe\" \"code\" \"%V\""
+@="\"C:\\Tools\\eupb.exe\" --no-wait -- \"code\" \"%V\""

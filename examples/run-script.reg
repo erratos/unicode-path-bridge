@@ -1,17 +1,17 @@
 Windows Registry Editor Version 5.00
 
-; Unicode Path Bridge — Run a PowerShell script on the selected file/folder
+; eupb — Run a PowerShell script on the selected file/folder
 ;
-; This adds a "Run My Script" entry to the right-click context menu.
-; The path is passed as the first argument to your script, with full Unicode support.
+; Adds a "Run My Script" entry to the right-click context menu. The
+; selected path is passed as %V (full Unicode path) to the script.
 ;
 ; BEFORE IMPORTING:
-;   1. Replace C:\\Tools\\ubp.exe with the actual path to ubp.exe
-;   2. Replace C:\\Scripts\\my-script.ps1 with the path to your script
+;   1. Replace C:\\Tools\\eupb.exe with the actual path to eupb.exe.
+;   2. Replace C:\\Scripts\\my-script.ps1 with the path to your script.
 
 [HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\RunMyScript]
 @="Run My Script"
 "Icon"="shell32.dll,1"
 
 [HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\RunMyScript\command]
-@="\"C:\\Tools\\ubp.exe\" \"powershell.exe\" \"-ExecutionPolicy\" \"Bypass\" \"-File\" \"C:\\Scripts\\my-script.ps1\" \"%V\""
+@="\"C:\\Tools\\eupb.exe\" -- \"powershell.exe\" \"-NoProfile\" \"-ExecutionPolicy\" \"Bypass\" \"-File\" \"C:\\Scripts\\my-script.ps1\" \"%V\""

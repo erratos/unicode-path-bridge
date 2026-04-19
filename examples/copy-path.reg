@@ -1,16 +1,16 @@
 Windows Registry Editor Version 5.00
 
-; Unicode Path Bridge — Copy file/folder path to clipboard
+; eupb — Copy file/folder path to clipboard (Unicode-safe, no console flash)
 ;
-; This adds a "Copy Path (Unicode)" entry to the right-click context menu
-; for all files and folders.
+; Adds a "Copy Path (Unicode)" entry to the right-click context menu for
+; all files and folders.
 ;
-; BEFORE IMPORTING: Replace C:\\Tools\\ubp.exe with the actual path to ubp.exe
-; (remember to double the backslashes).
+; BEFORE IMPORTING: Replace C:\\Tools\\eupb.exe with the actual path to
+; eupb.exe (remember to double the backslashes).
 
 [HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\CopyPathUnicode]
 @="Copy Path (Unicode)"
 "Icon"="shell32.dll,134"
 
 [HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\CopyPathUnicode\command]
-@="\"C:\\Tools\\ubp.exe\" \"powershell.exe\" \"-ExecutionPolicy\" \"Bypass\" \"-Command\" \"Set-Clipboard -Value '%V'\""
+@="\"C:\\Tools\\eupb.exe\" -- \"powershell.exe\" \"-NoProfile\" \"-ExecutionPolicy\" \"Bypass\" \"-Command\" \"Set-Clipboard -Value $args[0]\" \"%V\""

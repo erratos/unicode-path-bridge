@@ -1,100 +1,111 @@
-# Unicode Path Bridge (UBP)
+# eupb — Explorer Unicode Path Bridge
 
-A tiny, zero-dependency Windows utility that passes file paths from Explorer's right-click context menu to any program — with **full Unicode support** and **no console window flash**.
+A single-file Windows wrapper that launches a target program with
+**Unicode-safe arguments** and **no console window flash**. Built for
+use from the Explorer right-click menu, but works anywhere.
 
-## The Problem
+## The problem it solves
 
-When you add a custom right-click menu entry in the Windows registry to run a script (PowerShell, Python, etc.), you hit a combination of issues:
+When a Windows registry context menu entry runs a script, four things
+go wrong:
 
-| Problem | What happens |
-|---------|-------------|
-| **Unicode corruption** | PowerShell 5.1 converts non-ANSI characters (Cyrillic, CJK, emoji) to `?` |
-| **8.3 path format** | Using `%1` instead of `%V` can give you `C:\DOSSIE~1\FILE.TXT` |
-| **Console flash** | A black command prompt window flickers for ~0.5s on every click |
-| **VBScript workaround fails** | Using `wscript.exe` to hide the window reintroduces ANSI corruption |
+| Problem | Effect |
+|---|---|
+| PowerShell 5.1 converts args through the ANSI code page | `C:\Тест\файл.txt` → `C:\???\????.txt` |
+| `%1` in the registry can give 8.3 short paths | `C:\Dossier Été\` → `C:\DOSSIE~1\` |
+| Console programs flash a black window on every click | ~50–200 ms flicker, ugly |
+| `wscript.exe` hides the window but reintroduces ANSI corruption | back to `?` characters |
 
-**UBP solves all four at once.** It's a single `.exe` compiled as a Windows application (no console), that receives arguments in Unicode from Explorer and forwards them to your target program.
+`eupb.exe` is a GUI-subsystem executable that receives its arguments in
+UTF-16 (via `CommandLineToArgvW`), re-escapes them per the Microsoft
+C/C++ command-line rules, and launches the target via `CreateProcessW`
+with `CREATE_NO_WINDOW`. The arguments survive end-to-end.
 
-## Quick Start
-
-### 1. Build
-
-```batch
-build.cmd
-```
-
-Or manually:
-
-```batch
-C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /target:winexe /win32manifest:src\ubp.manifest /out:ubp.exe src\ubp.cs
-```
-
-No SDK, no Visual Studio, no NuGet — just the .NET Framework 4.x compiler that's already on your machine.
-
-### 2. Install
-
-Copy `ubp.exe` to a permanent location (e.g., `C:\Tools\ubp.exe`).
-
-### 3. Configure the Registry
-
-Import one of the example `.reg` files from the [`examples/`](examples/) folder, or create your own entry:
+## Usage
 
 ```
-"C:\Tools\ubp.exe" "powershell.exe" "-File" "C:\Scripts\my-script.ps1" "%V"
+eupb [OPTIONS] -- <TARGET> [TARGET_ARGS...]
 ```
 
-The `%V` token is replaced by Explorer with the full Unicode path of the file or folder you right-clicked.
+The `--` is recommended whenever the target or its args may look like
+eupb options.
 
-## Usage Examples
+### Options
 
-```
-:: Run a PowerShell script
-"C:\Tools\ubp.exe" "powershell.exe" "-File" "C:\Scripts\process.ps1" "%V"
+| Option | Default | Effect |
+|---|---|---|
+| `--hide-console` | on | Launch the target with `CREATE_NO_WINDOW` |
+| `--show-console` | | Keep the target's console visible |
+| `--wait` | on | Wait for the target to exit, propagate its exit code |
+| `--no-wait` | | Launch detached and return 0 immediately |
+| `--cwd <DIR>` | inherit | Working directory for the target |
+| `--show-errors` | on | Show a MessageBox on launch errors |
+| `--quiet-errors` | | Suppress error dialogs; use exit codes only |
+| `--log <FILE>` | | Log invocation details (UTF-8 + BOM) |
+| `--version`, `-V` | | Show version |
+| `--help`, `-h` | | Show help |
 
-:: Run a Python script
-"C:\Tools\ubp.exe" "python.exe" "C:\Scripts\process.py" "%V"
+### Exit codes
 
-:: Open in any program
-"C:\Tools\ubp.exe" "C:\MyApp\tool.exe" "--input" "%V"
+| Code | Meaning |
+|---|---|
+| 0 | Success (or target's exit code when `--wait`) |
+| 1 | Usage error (no target) |
+| 2 | Target program not found |
+| 3 | `CreateProcessW` failed |
+| 4 | Wait / exit-code retrieval failed |
+
+## Registry example
+
+Add "Run my script" to the right-click menu for files:
+
+```reg
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\*\shell\MyScript]
+@="Run my script"
+"Icon"="C:\\Tools\\eupb.exe"
+
+[HKEY_CLASSES_ROOT\*\shell\MyScript\command]
+@="\"C:\\Tools\\eupb.exe\" -- \"powershell.exe\" \"-NoProfile\" \"-File\" \"C:\\Scripts\\my-script.ps1\" \"%V\""
 ```
 
 See [`examples/`](examples/) for ready-to-import `.reg` files.
 
-## How It Works
+## Build
 
 ```
-Explorer ──(%V)──► Registry ──(Unicode args)──► ubp.exe ──(Unicode args)──► Target Program
-                                                   │
-                                                   ├─ No console window (compiled as /target:winexe)
-                                                   ├─ Correct argument escaping (spaces, quotes, backslashes)
-                                                   └─ Long path support via manifest (>260 chars)
+cargo build --release
 ```
 
-For a detailed technical explanation, see [docs/how-it-works.md](docs/how-it-works.md).
+The release binary lands at `target\release\eupb.exe`. The application
+manifest (long-path awareness, Win10/11, `asInvoker`, UTF-8 active code
+page) is embedded automatically by `build.rs`.
+
+## Test
+
+```
+cargo test
+```
+
+Runs 29 unit tests for `escape_arg` (table-driven, including a
+`CommandLineToArgvW` round-trip) and 16 integration tests spawning
+`eupb.exe → eupb-test-target.exe` across ASCII, Cyrillic, CJK, emoji,
+French accents, apostrophes, trailing-backslash-plus-space, UNC long
+paths, `--no-wait`, `--cwd`, `--log`, and PATH+PATHEXT resolution.
 
 ## Requirements
 
-- Windows 10 or 11
-- .NET Framework 4.x (pre-installed on all Windows 10/11 machines)
+- Windows 10 22H2 / Windows 11
+- Rust 1.78+ with the `x86_64-pc-windows-msvc` target (for building)
 
-## Alternatives
+## History
 
-| Tool | Trade-off |
-|------|-----------|
-| [PowerShell 7](https://github.com/PowerShell/PowerShell) | Fixes Unicode natively, but requires manual install (~400 MB) |
-| [createprocess-windows](https://github.com/cubiclesoft/createprocess-windows) | Full-featured CreateProcess wrapper, but complex CLI and requires C++ compilation |
-| [SharpShell](https://github.com/dwmkerr/sharpshell) | Proper COM shell extension framework, but heavyweight for simple forwarding |
-| VBScript (`wscript.exe`) | Hides the window, but reintroduces ANSI encoding corruption |
-
-UBP is for you if you want a **single file, zero config, zero dependency** solution.
-
-## Testing
-
-```powershell
-powershell -ExecutionPolicy Bypass -File tests\test-paths.ps1
-```
-
-This runs the bridge with French accents, Cyrillic, Japanese, emoji, and edge-case paths, then verifies the target script received them correctly.
+Version 0.8.0 was a .NET Framework 4.x / C# implementation (project
+name: "UBP"). The C# sources are preserved under
+[`archive/dotnet/`](archive/dotnet/). Version 0.1.0 onward is a Rust
+rewrite with the new project name **eupb** (Explorer Unicode Path
+Bridge).
 
 ## License
 
