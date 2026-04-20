@@ -31,11 +31,11 @@ Windows Registry Editor Version 5.00
 "Icon"="wsl.exe,0"
 
 [HKEY_CLASSES_ROOT\Directory\shell\EupbWslHere\command]
-@="\"C:\\Tools\\eupb.exe\" --show-console --no-wait -- wsl --cd \"%V\""
+@="\"C:\\Tools\\eupb.exe\" --show-console -- wsl --cd \"%V\""
 
 [HKEY_CLASSES_ROOT\Directory\Background\shell\EupbWslHere]
 @="Open in WSL"
 "Icon"="wsl.exe,0"
 
 [HKEY_CLASSES_ROOT\Directory\Background\shell\EupbWslHere\command]
-@="\"C:\\Tools\\eupb.exe\" --show-console --no-wait -- wsl --cd \"%W\""
+@="\"C:\\Tools\\eupb.exe\" --show-console -- wsl --cd \"%W\""

@@ -28,7 +28,8 @@ fn run_roundtrip(args: &[&str]) -> Vec<String> {
 
     let status = Command::cargo_bin("eupb")
         .expect("build eupb")
-        .arg("--show-console") // keep things simple for CI; flag is accepted
+        .arg("--show-console")
+        .arg("--wait-exit") // must wait for target to write result.json
         .arg("--")
         .arg(&target)
         .arg("--out")
@@ -339,6 +340,7 @@ fn cwd_option_is_honored() {
         .expect("build eupb")
         .arg("--cwd")
         .arg(tmp.path())
+        .arg("--wait-exit")
         .arg("--")
         .arg(&target)
         .arg("--out")
@@ -360,7 +362,7 @@ fn run_with(eupb_args: &[&std::ffi::OsStr], target_args: &[&std::ffi::OsStr]) ->
     let target = target_path();
 
     let mut cmd = Command::cargo_bin("eupb").expect("build eupb");
-    cmd.arg("--show-console");
+    cmd.arg("--show-console").arg("--wait-exit");
     for a in eupb_args {
         cmd.arg(a);
     }
@@ -454,7 +456,7 @@ fn set_env_overrides_parent_var() {
     let status = Command::cargo_bin("eupb")
         .expect("build eupb")
         .env("EUPB_TEST_OVR", "before")
-        .arg("--show-console")
+        .arg("--show-console").arg("--wait-exit")
         .arg("--set-env")
         .arg("EUPB_TEST_OVR=after")
         .arg("--")
@@ -480,7 +482,7 @@ fn set_env_override_is_case_insensitive() {
     let status = Command::cargo_bin("eupb")
         .expect("build eupb")
         .env("EUPB_TEST_CASE", "orig")
-        .arg("--show-console")
+        .arg("--show-console").arg("--wait-exit")
         .arg("--set-env")
         .arg("eupb_test_case=new")
         .arg("--")
@@ -515,7 +517,7 @@ fn set_env_preserves_other_parent_vars() {
     let status = Command::cargo_bin("eupb")
         .expect("build eupb")
         .env("EUPB_TEST_KEEP", "preserved")
-        .arg("--show-console")
+        .arg("--show-console").arg("--wait-exit")
         .arg("--set-env")
         .arg("EUPB_TEST_OTHER=added")
         .arg("--")
@@ -588,6 +590,7 @@ fn target_resolved_via_path_search() {
     let status = Command::cargo_bin("eupb")
         .expect("build eupb")
         .env("PATH", new_path)
+        .arg("--wait-exit")
         .arg("--")
         .arg("eupb-path-probe")
         .arg("--out")

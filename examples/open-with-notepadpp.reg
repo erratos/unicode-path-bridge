@@ -25,4 +25,4 @@ Windows Registry Editor Version 5.00
 "Icon"="C:\\Program Files\\Notepad++\\notepad++.exe,0"
 
 [HKEY_CLASSES_ROOT\*\shell\EupbOpenNotepadPP\command]
-@="\"C:\\Tools\\eupb.exe\" --no-wait -- \"C:\\Program Files\\Notepad++\\notepad++.exe\" -nosession \"%V\""
+@="\"C:\\Tools\\eupb.exe\" -- \"C:\\Program Files\\Notepad++\\notepad++.exe\" -nosession \"%V\""

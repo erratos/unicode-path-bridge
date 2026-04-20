@@ -22,11 +22,11 @@ Windows Registry Editor Version 5.00
 "Icon"="cmd.exe,0"
 
 [HKEY_CLASSES_ROOT\Directory\shell\EupbCmdHere\command]
-@="\"C:\\Tools\\eupb.exe\" --show-console --no-wait --cwd \"%V\" -- cmd.exe"
+@="\"C:\\Tools\\eupb.exe\" --show-console --cwd \"%V\" -- cmd.exe"
 
 [HKEY_CLASSES_ROOT\Directory\Background\shell\EupbCmdHere]
 @="Open Command Prompt here"
 "Icon"="cmd.exe,0"
 
 [HKEY_CLASSES_ROOT\Directory\Background\shell\EupbCmdHere\command]
-@="\"C:\\Tools\\eupb.exe\" --show-console --no-wait --cwd \"%W\" -- cmd.exe"
+@="\"C:\\Tools\\eupb.exe\" --show-console --cwd \"%W\" -- cmd.exe"

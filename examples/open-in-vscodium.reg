@@ -15,4 +15,4 @@ Windows Registry Editor Version 5.00
 "Icon"="C:\\Users\\janot\\AppData\\Local\\Programs\\VSCodium\\VSCodium.exe,0"
 
 [HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\OpenInVSCode\command]
-@="\"C:\\Tools\\eupb.exe\" --no-wait -- \"C:\\Users\\janot\\AppData\\Local\\Programs\\VSCodium\\VSCodium.exe\" \"%V\""
+@="\"C:\\Tools\\eupb.exe\" -- \"C:\\Users\\janot\\AppData\\Local\\Programs\\VSCodium\\VSCodium.exe\" \"%V\""

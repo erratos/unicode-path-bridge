@@ -34,12 +34,13 @@ struct Cli {
     #[arg(long, overrides_with = "hide_console")]
     show_console: bool,
 
-    /// Wait for the target to exit and propagate its exit code. Default.
-    #[arg(long, overrides_with = "no_wait")]
-    wait: bool,
+    /// Wait for the target to exit and propagate its exit code.
+    /// `--wait` is accepted as an alias.
+    #[arg(long, visible_alias = "wait", overrides_with = "no_wait")]
+    wait_exit: bool,
 
-    /// Do not wait; launch detached and exit 0 immediately.
-    #[arg(long, overrides_with = "wait")]
+    /// Launch detached, return 0 immediately. Default; explicit form for clarity.
+    #[arg(long, overrides_with = "wait_exit")]
     no_wait: bool,
 
     /// Working directory for the target.
@@ -127,9 +128,9 @@ fn main() -> ExitCode {
         return ExitCode::from(0);
     }
 
-    // Resolve defaults (hide_console default = true, wait default = true, show_errors default = true)
+    // Resolve defaults (hide_console default = true, wait default = false, show_errors default = true)
     let hide_console = !parsed.show_console;
-    let wait = !parsed.no_wait;
+    let wait = parsed.wait_exit;
     let show_errors = !parsed.quiet_errors;
 
     // Require at least a target.

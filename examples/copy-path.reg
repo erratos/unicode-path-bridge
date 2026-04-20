@@ -19,4 +19,4 @@ Windows Registry Editor Version 5.00
 "Icon"="shell32.dll,134"
 
 [HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\CopyPathUnicode\command]
-@="\"C:\\Tools\\eupb.exe\" \"--set-env=EUPB_PATH=%V\" -- \"powershell.exe\" \"-NoProfile\" \"-ExecutionPolicy\" \"Bypass\" \"-Command\" \"Set-Clipboard -Value $env:EUPB_PATH\""
+@="\"C:\\Tools\\eupb.exe\" \"--set-env=EUPB_PATH=%V\" -- powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"Set-Clipboard -Value $env:EUPB_PATH\""

@@ -36,8 +36,8 @@ eupb options.
 |---|---|---|
 | `--hide-console` | on | Launch the target with `CREATE_NO_WINDOW` |
 | `--show-console` | | Keep the target's console visible |
-| `--wait` | on | Wait for the target to exit, propagate its exit code |
-| `--no-wait` | | Launch detached and return 0 immediately |
+| `--wait-exit` (alias `--wait`) | | Wait for the target to exit, propagate its exit code |
+| `--no-wait` | default | Launch detached, return 0 immediately |
 | `--cwd <DIR>` | inherit | Working directory for the target |
 | `--show-errors` | on | Show a MessageBox on launch errors |
 | `--quiet-errors` | | Suppress error dialogs; use exit codes only |
@@ -61,7 +61,7 @@ it. The registry entry reads its own `$env:NAME` (or `%NAME%`) instead
 of a positional arg:
 
 ```reg
-@="\"C:\\Tools\\eupb.exe\" \"--set-env=EUPB_PATH=%V\" -- \"powershell.exe\" \"-NoProfile\" \"-Command\" \"Set-Clipboard -Value $env:EUPB_PATH\""
+@="\"C:\\Tools\\eupb.exe\" \"--set-env=EUPB_PATH=%V\" -- powershell.exe -NoProfile -Command \"Set-Clipboard -Value $env:EUPB_PATH\""
 ```
 
 `--set-env` can be repeated. Overrides of existing variables are
@@ -90,7 +90,7 @@ Windows Registry Editor Version 5.00
 "Icon"="C:\\Tools\\eupb.exe"
 
 [HKEY_CLASSES_ROOT\*\shell\MyScript\command]
-@="\"C:\\Tools\\eupb.exe\" -- \"powershell.exe\" \"-NoProfile\" \"-File\" \"C:\\Scripts\\my-script.ps1\" \"%V\""
+@="\"C:\\Tools\\eupb.exe\" -- powershell.exe -NoProfile -File \"C:\\Scripts\\my-script.ps1\" \"%V\""
 ```
 
 See [`examples/`](examples/) for ready-to-import `.reg` files.
