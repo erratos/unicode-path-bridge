@@ -1,0 +1,41 @@
+Windows Registry Editor Version 5.00
+
+; eupb — Open WSL in the selected folder (Unicode-safe, no flash)
+;
+; wsl.exe --cd accepts a Windows path (e.g. C:\Dossier\日本語) and converts
+; it to the POSIX path internally via wslpath, so bash starts in the right
+; directory without any shell-level reparsing of the path.
+;
+; Why not pass the path directly to bash as an argument?  bash would receive
+; the path inside a command string where characters like $, &, ;, ', ` have
+; special meaning — a path like "Tom & Jerry" would be split by & into two
+; commands.  wsl --cd sidesteps this entirely: wsl.exe parses --cd as a
+; Windows flag, never touching bash's tokenizer.
+;
+; eupb's role here:
+;   1. Suppress the brief console window that Explorer creates when launching
+;      wsl.exe directly (wsl.exe is a console subsystem binary).
+;   2. Properly quote the path before passing it to CreateProcessW —
+;      Explorer does not add quotes around %V, so a path with spaces would
+;      split across multiple arguments without eupb's escaping.
+;
+; To target a specific WSL distribution, add "--distribution" "MyDistro"
+; before "--cd".
+;
+; Applied to folders only.  Requires WSL to be installed.
+;
+; BEFORE IMPORTING: Replace C:\\Tools\\eupb.exe with the actual path.
+
+[HKEY_CLASSES_ROOT\Directory\shell\EupbWslHere]
+@="Open in WSL"
+"Icon"="wsl.exe,0"
+
+[HKEY_CLASSES_ROOT\Directory\shell\EupbWslHere\command]
+@="\"C:\\Tools\\eupb.exe\" --show-console --no-wait -- wsl --cd \"%V\""
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\EupbWslHere]
+@="Open in WSL"
+"Icon"="wsl.exe,0"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\EupbWslHere\command]
+@="\"C:\\Tools\\eupb.exe\" --show-console --no-wait -- wsl --cd \"%W\""

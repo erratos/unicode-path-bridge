@@ -58,6 +58,12 @@ struct Cli {
     #[arg(long, value_name = "FILE")]
     log: Option<PathBuf>,
 
+    /// Canonicalize the target path (resolve symlinks, normalize dots).
+    /// On Windows this adds a `\\?\` extended-length prefix which may break
+    /// Electron apps (VS Code, VSCodium, etc.). Disabled by default.
+    #[arg(long)]
+    canonicalize: bool,
+
     /// Set or override an environment variable for the target process.
     /// Format: `NAME=VALUE`. Repeatable. Useful to pass Unicode paths to
     /// shells like PowerShell whose `-Command` parser would otherwise
@@ -138,7 +144,7 @@ fn main() -> ExitCode {
     }
 
     let target_name = &parsed.target_args[0];
-    let target = match resolve_executable(target_name) {
+    let target = match resolve_executable(target_name, parsed.canonicalize) {
         Some(p) => p,
         None => {
             if show_errors {
@@ -224,13 +230,21 @@ fn parse_set_env_pairs(_raws: &[OsString]) -> Result<Vec<(OsString, OsString)>, 
 
 /// Resolve a program name to an absolute path. If `name` contains a path
 /// separator, treat it as a literal path. Otherwise search PATH with PATHEXT.
-fn resolve_executable(name: &OsStr) -> Option<PathBuf> {
+///
+/// `canonicalize`: if true, call `std::fs::canonicalize` (resolves symlinks and
+/// normalizes dots, but adds a `\\?\` extended-length prefix on Windows which
+/// breaks Electron apps). Default is false — the path is used as-is.
+fn resolve_executable(name: &OsStr, canonicalize: bool) -> Option<PathBuf> {
     let as_path = Path::new(name);
     let name_str = name.to_string_lossy();
 
     if name_str.contains('/') || name_str.contains('\\') {
         return if as_path.is_file() {
-            std::fs::canonicalize(as_path).ok().or_else(|| Some(as_path.to_path_buf()))
+            if canonicalize {
+                std::fs::canonicalize(as_path).ok().or_else(|| Some(as_path.to_path_buf()))
+            } else {
+                Some(as_path.to_path_buf())
+            }
         } else {
             None
         };

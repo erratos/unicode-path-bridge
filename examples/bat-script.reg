@@ -1,0 +1,51 @@
+Windows Registry Editor Version 5.00
+
+; eupb — Run a .bat script on the selected file or folder (Unicode-safe)
+;
+; .bat files cannot be passed directly to CreateProcessW — they require
+; cmd.exe as an interpreter.  The naive registry command:
+;
+;   cmd.exe /c "C:\Scripts\my-script.bat" "%V"
+;
+; has two layers of parsing, both hostile to special characters:
+;
+;   Layer 1 — cmd.exe's /c parser:
+;     Characters like & | ^ ( ) ! in the path are cmd metacharacters.
+;     cmd.exe interprets them even inside double-quoted strings.
+;     A path like "Tom & Jerry" becomes two separate tokens: "Tom " and
+;     " Jerry", and cmd tries to run "Jerry" as a second command.
+;
+;   Layer 2 — inside the batch file:
+;     %1 receives the first argument WITH its surrounding quotes.
+;     %~1 strips the quotes (required for paths with spaces).
+;     But if the path reached %1 already broken by layer 1, %~1 cannot
+;     help.
+;
+; Solution: --set-env plants the value in the environment block before
+; cmd.exe starts.  The path bypasses both parsers entirely.  Inside the
+; batch file, %EUPB_PATH% expands to the raw value — no metacharacter
+; reinterpretation, no quote stripping needed.
+;
+; Batch script template:
+;
+;   @echo off
+;   set "TARGET=%EUPB_PATH%"
+;   echo Processing: %TARGET%
+;   REM ... rest of the script
+;
+; Note: delayed expansion (setlocal enabledelayedexpansion) uses ! as a
+; delimiter, which is also legal in file names.  With --set-env the path
+; is already in %EUPB_PATH%, so delayed expansion is usually not needed.
+; If you must use it, access the value with %EUPB_PATH% (percent style),
+; not !EUPB_PATH! (bang style).
+;
+; BEFORE IMPORTING:
+;   1. Replace C:\\Tools\\eupb.exe with the actual path to eupb.exe.
+;   2. Replace C:\\Scripts\\my-script.bat with the path to your .bat file.
+
+[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\EupbRunBat]
+@="Run batch script"
+"Icon"="shell32.dll,1"
+
+[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\EupbRunBat\command]
+@="\"C:\\Tools\\eupb.exe\" --show-console \"--set-env=EUPB_PATH=%V\" -- cmd.exe /c \"C:\\Tools\\my-script.bat\""

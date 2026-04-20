@@ -1,0 +1,32 @@
+Windows Registry Editor Version 5.00
+
+; eupb — Open a Command Prompt in the selected folder (Unicode-safe, no flash)
+;
+; Why not just "cmd.exe /k cd /d \"%V\""?  Everything after /k is handed
+; to cmd's own tokenizer: characters like & ! ^ ( ) | that are legal in
+; folder names become metacharacters and either break the cd command or
+; silently land somewhere else.
+;
+; Using --cwd "%V" sets the working directory via CreateProcessW *before*
+; cmd.exe starts.  The Unicode path never enters a cmd parser at all —
+; cmd just wakes up already in the right folder.
+;
+; Applied to folders (right-click on folder icon) and folder backgrounds
+; (right-click on empty space inside a folder window).  The background
+; verb receives the folder path in %W, not %V.
+;
+; BEFORE IMPORTING: Replace C:\\Tools\\eupb.exe with the actual path.
+
+[HKEY_CLASSES_ROOT\Directory\shell\EupbCmdHere]
+@="Open Command Prompt here"
+"Icon"="cmd.exe,0"
+
+[HKEY_CLASSES_ROOT\Directory\shell\EupbCmdHere\command]
+@="\"C:\\Tools\\eupb.exe\" --show-console --no-wait --cwd \"%V\" -- cmd.exe"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\EupbCmdHere]
+@="Open Command Prompt here"
+"Icon"="cmd.exe,0"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\EupbCmdHere\command]
+@="\"C:\\Tools\\eupb.exe\" --show-console --no-wait --cwd \"%W\" -- cmd.exe"

@@ -1,0 +1,34 @@
+Windows Registry Editor Version 5.00
+
+; eupb — Run a Python script on the selected file or folder (Unicode-safe)
+;
+; Python's sys.argv uses the MSVC C runtime on Windows, so passing %V as a
+; direct argument works — Python receives the Unicode path correctly.
+;
+; However, --set-env is recommended over a direct positional argument:
+;
+;   Direct arg:   %V → eupb quotes it → sys.argv[1] in Python (works)
+;   --set-env:    %V → env block (UTF-16) → os.environ['EUPB_PATH'] (always works)
+;
+; The difference surfaces when the Python script itself calls a shell command
+; internally — e.g. subprocess.run(f'tool "{sys.argv[1]}"', shell=True).
+; A path like "Tom & Jerry" passed through shell=True would break the & .
+; Reading from os.environ and using subprocess.run([...], shell=False)
+; instead keeps the path safe through every layer.
+;
+; The companion script should read:
+;
+;   import os, sys
+;   path = os.environ.get('EUPB_PATH', sys.argv[1] if len(sys.argv) > 1 else '')
+;   # ... process path
+;
+; BEFORE IMPORTING:
+;   1. Replace C:\\Tools\\eupb.exe with the actual path to eupb.exe.
+;   2. Replace C:\\Scripts\\my-script.py with the path to your Python script.
+
+[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\EupbRunPython]
+@="Run Python script"
+"Icon"="shell32.dll,1"
+
+[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\EupbRunPython\command]
+@="\"C:\\Tools\\eupb.exe\" \"--set-env=EUPB_PATH=%V\" -- python.exe \"C:\\Scripts\\my-script.py\""

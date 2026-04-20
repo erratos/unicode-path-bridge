@@ -1,0 +1,42 @@
+Windows Registry Editor Version 5.00
+
+; eupb — Open Windows Terminal in the selected folder (Unicode-safe, no flash)
+;
+; Windows Terminal (wt.exe) uses its own argument parser — separate from
+; the MSVC C runtime used by most command-line tools.  It defines its own
+; subcommand syntax: "wt new-tab --startingDirectory <path> --profile <name>".
+; This parser expects a properly quoted path string but handles wide (Unicode)
+; characters correctly because wt.exe is a modern Win32 application.
+;
+; eupb's role here:
+;   1. Ensure the path is correctly quoted before reaching wt.exe's parser
+;      (Explorer does not add quotes around %V).
+;   2. Avoid the brief console flash that Explorer would produce when
+;      launching wt.exe directly (wt.exe is packaged as a console binary
+;      even though it opens a GUI window).
+;
+; Note: unlike cmd-here.reg which uses --cwd to keep the path out of any
+; command string, here the path is passed via --startingDirectory because
+; wt.exe needs it as an explicit flag — it does not inherit the working
+; directory from its parent process.
+;
+; Customize the --profile value to match one of your WT profile names,
+; or remove "--profile" "PowerShell" to use the default profile.
+;
+; Applied to folders and folder backgrounds.
+;
+; BEFORE IMPORTING: Replace C:\\Tools\\eupb.exe with the actual path.
+
+[HKEY_CLASSES_ROOT\Directory\shell\EupbWindowsTerminal]
+@="Open in Windows Terminal"
+"Icon"="wt.exe,0"
+
+[HKEY_CLASSES_ROOT\Directory\shell\EupbWindowsTerminal\command]
+@="\"C:\\Tools\\eupb.exe\" --no-wait -- wt new-tab --profile PowerShell --startingDirectory \"%V\""
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\EupbWindowsTerminal]
+@="Open in Windows Terminal"
+"Icon"="wt.exe,0"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\EupbWindowsTerminal\command]
+@="\"C:\\Tools\\eupb.exe\" --no-wait -- wt new-tab --profile PowerShell --startingDirectory \"%W\""

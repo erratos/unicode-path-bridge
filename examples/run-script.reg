@@ -14,4 +14,4 @@ Windows Registry Editor Version 5.00
 "Icon"="shell32.dll,1"
 
 [HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\RunMyScript\command]
-@="\"C:\\Tools\\eupb.exe\" -- \"powershell.exe\" \"-NoProfile\" \"-ExecutionPolicy\" \"Bypass\" \"-File\" \"C:\\Scripts\\my-script.ps1\" \"%V\""
+@="\"C:\\Tools\\eupb.exe\" -- powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Scripts\\my-script.ps1\" \"%V\""

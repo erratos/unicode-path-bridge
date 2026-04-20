@@ -43,6 +43,7 @@ eupb options.
 | `--quiet-errors` | | Suppress error dialogs; use exit codes only |
 | `--log <FILE>` | | Log invocation details (UTF-8 + BOM) |
 | `--set-env NAME=VALUE` | | Set or override an env var for the target. Repeatable. |
+| `--canonicalize` | | Resolve symlinks and normalize the target path. On Windows this adds a `\\?\` extended-length prefix — may break Electron apps (VS Code, VSCodium, etc.). |
 | `--version`, `-V` | | Show version |
 | `--help`, `-h` | | Show help |
 
