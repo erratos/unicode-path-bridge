@@ -7,11 +7,11 @@ Windows Registry Editor Version 5.00
 ;
 ; BEFORE IMPORTING:
 ;   1. Replace C:\\Tools\\eupb.exe with the actual path to eupb.exe.
-;   2. Replace C:\\Scripts\\my-script.ps1 with the path to your script.
+;   2. Replace C:\\Tools\\my-script.ps1 with the path to your script.
 
-[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\RunMyScript]
+[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\EupbRunMyScript]
 @="Run My Script"
 "Icon"="shell32.dll,1"
 
-[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\RunMyScript\command]
-@="\"C:\\Tools\\eupb.exe\" -- powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Scripts\\my-script.ps1\" \"%V\""
+[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\EupbRunMyScript\command]
+@="\"C:\\Tools\\eupb.exe\" -- powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\Tools\\my-script.ps1\" \"%V\""

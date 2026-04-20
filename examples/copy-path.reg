@@ -14,9 +14,9 @@ Windows Registry Editor Version 5.00
 ; value in an environment variable *before* PowerShell starts, so no parser
 ; ever touches it. See docs/registry-setup.md for background.
 
-[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\CopyPathUnicode]
+[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\EupbCopyPathUnicode]
 @="Copy Path (Unicode)"
 "Icon"="shell32.dll,134"
 
-[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\CopyPathUnicode\command]
+[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\EupbCopyPathUnicode\command]
 @="\"C:\\Tools\\eupb.exe\" \"--set-env=EUPB_PATH=%V\" -- powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"Set-Clipboard -Value $env:EUPB_PATH\""

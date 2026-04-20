@@ -10,9 +10,9 @@ Windows Registry Editor Version 5.00
 ;   1. Replace C:\\Tools\\eupb.exe with the actual path to eupb.exe.
 ;   2. Adjust the "Icon" path to your VS Code install location.
 
-[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\OpenInVSCode]
+[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\EupbOpenInVSCodium]
 @="Open in VS Code"
 "Icon"="C:\\Users\\janot\\AppData\\Local\\Programs\\VSCodium\\VSCodium.exe,0"
 
-[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\OpenInVSCode\command]
+[HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\EupbOpenInVSCodium\command]
 @="\"C:\\Tools\\eupb.exe\" -- \"C:\\Users\\janot\\AppData\\Local\\Programs\\VSCodium\\VSCodium.exe\" \"%V\""

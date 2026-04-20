@@ -24,11 +24,11 @@ Windows Registry Editor Version 5.00
 ;
 ; BEFORE IMPORTING:
 ;   1. Replace C:\\Tools\\eupb.exe with the actual path to eupb.exe.
-;   2. Replace C:\\Scripts\\my-script.py with the path to your Python script.
+;   2. Replace C:\\Tools\\my-script.py with the path to your Python script.
 
 [HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\EupbRunPython]
 @="Run Python script"
 "Icon"="shell32.dll,1"
 
 [HKEY_CLASSES_ROOT\AllFilesystemObjects\shell\EupbRunPython\command]
-@="\"C:\\Tools\\eupb.exe\" \"--set-env=EUPB_PATH=%V\" -- python.exe \"C:\\Scripts\\my-script.py\""
+@="\"C:\\Tools\\eupb.exe\" --show-console \"--set-env=EUPB_PATH=%V\" -- python.exe \"C:\\Tools\\my-script.py\""
