@@ -72,7 +72,7 @@ or empty `NAME`) cause exit 1.
 
 | Code | Meaning |
 |---|---|
-| 0 | Success (or target's exit code when `--wait`) |
+| 0 | Success (or target's exit code when `--wait-exit`) |
 | 1 | Usage error (no target) |
 | 2 | Target program not found |
 | 3 | `CreateProcessW` failed |
