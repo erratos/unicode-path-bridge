@@ -61,8 +61,12 @@ it. The registry entry reads its own `$env:NAME` (or `%NAME%`) instead
 of a positional arg:
 
 ```reg
-@="\"C:\\Tools\\eupb.exe\" \"--set-env=EUPB_PATH=%V\" -- powershell.exe -NoProfile -Command \"Set-Clipboard -Value $env:EUPB_PATH\""
+@="\"C:\\Tools\\eupb.exe\" --wait-exit \"--set-env=EUPB_PATH=%V\" -- powershell.exe -NoProfile -Command \"Set-Clipboard -Value $env:EUPB_PATH\""
 ```
+
+Note: `--wait-exit` is required here. The default `--no-wait` launches the child
+as `DETACHED_PROCESS` which has no message loop — `Set-Clipboard` silently does
+nothing in that context. Any command that writes to the clipboard needs `--wait-exit`.
 
 `--set-env` can be repeated. Overrides of existing variables are
 case-insensitive (Windows env semantics). Invalid pairs (missing `=`

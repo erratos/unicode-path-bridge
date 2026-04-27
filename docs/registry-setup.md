@@ -75,8 +75,13 @@ Two robust options:
    before PowerShell starts — no parser sees it:
 
    ```
-   "C:\Tools\eupb.exe" "--set-env=EUPB_PATH=%V" -- "powershell.exe" "-NoProfile" "-Command" "Set-Clipboard -Value $env:EUPB_PATH"
+   "C:\Tools\eupb.exe" --wait-exit "--set-env=EUPB_PATH=%V" -- "powershell.exe" "-NoProfile" "-Command" "Set-Clipboard -Value $env:EUPB_PATH"
    ```
+
+   Note the `--wait-exit`: the default (`--no-wait`) launches PowerShell as
+   `DETACHED_PROCESS`, which has no message loop. `Set-Clipboard` silently
+   does nothing in that context. `--wait-exit` removes `DETACHED_PROCESS` and
+   the clipboard write succeeds.
 
    Option 2 keeps the registry entry self-contained (no external
    `.ps1` to ship). See [`examples/copy-path.reg`](../examples/copy-path.reg).
@@ -92,5 +97,5 @@ is the generic fix.
 | `?` characters instead of Cyrillic / CJK | Target program (often PowerShell 5.1) converts via ANSI | Already the reason eupb exists — make sure the target is actually being launched through `eupb.exe` |
 | `DOSSIE~1` instead of `Dossier Été` | Used `%1` in the registry command | Replace with `%V` |
 | Brief black console flash | Omitted `--hide-console` or using `--show-console` | Remove `--show-console`; the default hides the window |
-| Explorer blocks until the script finishes | `eupb` waits by default | Add `--no-wait` to the command line |
+| `Set-Clipboard` (or other clipboard writes) silently does nothing | Default `--no-wait` launches the child as `DETACHED_PROCESS`, which has no message loop | Add `--wait-exit` for commands that write to the clipboard |
 | Path with `&`, `'`, `;`, `$`… is truncated or the script silently fails | Passed as positional arg to `powershell -Command` (parser hostile) | Switch to `-File` + `.ps1`, or use `--set-env` (see section above) |
