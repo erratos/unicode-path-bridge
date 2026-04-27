@@ -10,6 +10,17 @@ repository = "https://github.com/erratos/eupb"
 readme = "README.md"
 keywords = ["windows", "unicode", "explorer", "context-menu", "shell"]
 categories = ["command-line-utilities", "os::windows-apis"]
+include = [
+    "src/**/*",
+    "tests/**/*",
+    "examples/**/*",
+    "build.rs",
+    "Cargo.toml",
+    "Cargo.lock",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+]
 
 [[bin]]
 name = "eupb"

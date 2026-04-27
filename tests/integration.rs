@@ -17,7 +17,11 @@ fn target_path() -> PathBuf {
     let mut p = PathBuf::from(eupb);
     p.pop();
     p.push("eupb-test-target.exe");
-    assert!(p.is_file(), "eupb-test-target.exe missing at {}", p.display());
+    assert!(
+        p.is_file(),
+        "eupb-test-target.exe missing at {}",
+        p.display()
+    );
     p
 }
 
@@ -85,8 +89,7 @@ fn parse_json_string_array(s: &str) -> Vec<String> {
                     'r' => cur.push('\r'),
                     't' => cur.push('\t'),
                     'u' => {
-                        let hex =
-                            std::str::from_utf8(&bytes[i + 1..i + 5]).unwrap();
+                        let hex = std::str::from_utf8(&bytes[i + 1..i + 5]).unwrap();
                         let code = u32::from_str_radix(hex, 16).unwrap();
                         cur.push(char::from_u32(code).unwrap());
                         i += 4;
@@ -98,9 +101,7 @@ fn parse_json_string_array(s: &str) -> Vec<String> {
                 // UTF-8: push the whole multi-byte sequence as-is.
                 let start = i;
                 let first = bytes[i];
-                let len = if first < 0x80 {
-                    1
-                } else if first < 0xC0 {
+                let len = if first < 0xC0 {
                     1
                 } else if first < 0xE0 {
                     2
@@ -216,10 +217,7 @@ fn path_with_trailing_backslash_and_space() {
 #[test]
 fn unicode_french_accents() {
     let got = run_roundtrip(&["Dossier Été", "café.txt"]);
-    assert_eq!(
-        got,
-        vec!["Dossier Été".to_string(), "café.txt".to_string()]
-    );
+    assert_eq!(got, vec!["Dossier Été".to_string(), "café.txt".to_string()]);
 }
 
 #[test]
@@ -262,10 +260,7 @@ fn long_path_prefix() {
 fn many_args() {
     let args = ["--flag", "value1", "-x", "value 2", "positional"];
     let got = run_roundtrip(&args);
-    assert_eq!(
-        got,
-        args.iter().map(|s| s.to_string()).collect::<Vec<_>>()
-    );
+    assert_eq!(got, args.iter().map(|s| s.to_string()).collect::<Vec<_>>());
 }
 
 #[test]
@@ -326,7 +321,11 @@ fn log_file_is_written_with_utf8_bom() {
         "log must start with UTF-8 BOM"
     );
     let content = std::str::from_utf8(&bytes[3..]).expect("log body is UTF-8");
-    assert!(content.contains("café"), "log must record the arg: {}", content);
+    assert!(
+        content.contains("café"),
+        "log must record the arg: {}",
+        content
+    );
 }
 
 #[test]
@@ -456,7 +455,8 @@ fn set_env_overrides_parent_var() {
     let status = Command::cargo_bin("eupb")
         .expect("build eupb")
         .env("EUPB_TEST_OVR", "before")
-        .arg("--show-console").arg("--wait-exit")
+        .arg("--show-console")
+        .arg("--wait-exit")
         .arg("--set-env")
         .arg("EUPB_TEST_OVR=after")
         .arg("--")
@@ -482,7 +482,8 @@ fn set_env_override_is_case_insensitive() {
     let status = Command::cargo_bin("eupb")
         .expect("build eupb")
         .env("EUPB_TEST_CASE", "orig")
-        .arg("--show-console").arg("--wait-exit")
+        .arg("--show-console")
+        .arg("--wait-exit")
         .arg("--set-env")
         .arg("eupb_test_case=new")
         .arg("--")
@@ -517,7 +518,8 @@ fn set_env_preserves_other_parent_vars() {
     let status = Command::cargo_bin("eupb")
         .expect("build eupb")
         .env("EUPB_TEST_KEEP", "preserved")
-        .arg("--show-console").arg("--wait-exit")
+        .arg("--show-console")
+        .arg("--wait-exit")
         .arg("--set-env")
         .arg("EUPB_TEST_OTHER=added")
         .arg("--")

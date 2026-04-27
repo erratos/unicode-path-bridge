@@ -98,7 +98,11 @@ fn round_trip_via_commandlinetoargvw() {
 
         let mut argc: i32 = 0;
         let argv_ptr = unsafe { CommandLineToArgvW(PCWSTR(wide.as_ptr()), &mut argc) };
-        assert!(!argv_ptr.is_null(), "CommandLineToArgvW failed for {:?}", orig);
+        assert!(
+            !argv_ptr.is_null(),
+            "CommandLineToArgvW failed for {:?}",
+            orig
+        );
         assert_eq!(argc, 2, "expected 2 args for {:?}", orig);
 
         let arg1_ptr = unsafe { *argv_ptr.add(1) };

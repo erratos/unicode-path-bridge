@@ -26,7 +26,12 @@ use eupb::build_command_line;
 pub fn message_box(caption: &str, text: &str, is_error: bool) {
     let w_text = to_wide_nul(text);
     let w_caption = to_wide_nul(caption);
-    let flags = MB_OK | if is_error { MB_ICONERROR } else { MB_ICONINFORMATION };
+    let flags = MB_OK
+        | if is_error {
+            MB_ICONERROR
+        } else {
+            MB_ICONINFORMATION
+        };
     unsafe {
         let _ = MessageBoxW(
             None,
@@ -59,10 +64,7 @@ pub fn launch(r: &Resolved) -> ExitCode {
     // Convert app name (target) and command line to wide strings.
     let app_name = to_wide_nul(r.target.as_os_str());
     // lpCommandLine must be writable; make a mutable buffer.
-    let mut cmd_wide: Vec<u16> = cmd_line
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect();
+    let mut cmd_wide: Vec<u16> = cmd_line.encode_wide().chain(std::iter::once(0)).collect();
 
     let cwd_wide: Option<Vec<u16>> = r.cwd.as_ref().map(|p| to_wide_nul(p.as_os_str()));
 
@@ -76,9 +78,15 @@ pub fn launch(r: &Resolved) -> ExitCode {
 
     let mut flags: PROCESS_CREATION_FLAGS = CREATE_UNICODE_ENVIRONMENT;
     if r.hide_console {
+        // CREATE_NO_WINDOW suppresses the console window for console-subsystem targets.
+        // DETACHED_PROCESS (below) takes precedence over it but both are set intentionally:
+        // CREATE_NO_WINDOW acts as the fallback when we do wait (no DETACHED_PROCESS),
+        // and is harmless when combined with DETACHED_PROCESS.
         flags |= CREATE_NO_WINDOW;
     }
     if !r.wait {
+        // DETACHED_PROCESS fully detaches the child from our console session (no window,
+        // no inherited console handles). Takes precedence over CREATE_NO_WINDOW.
         flags |= DETACHED_PROCESS;
     }
 
@@ -185,10 +193,7 @@ pub fn launch(r: &Resolved) -> ExitCode {
 }
 
 fn to_wide_nul(s: &(impl AsRef<OsStr> + ?Sized)) -> Vec<u16> {
-    s.as_ref()
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect()
+    s.as_ref().encode_wide().chain(std::iter::once(0)).collect()
 }
 
 /// Build a `CREATE_UNICODE_ENVIRONMENT` block from the parent's current env,
@@ -258,7 +263,8 @@ fn format_win_error_from_result(err: &windows::core::Error) -> String {
     } else {
         unsafe { GetLastError().0 }
     };
-    let msg = format_system_message(win32_err).unwrap_or_else(|| String::from("(no system message)"));
+    let msg =
+        format_system_message(win32_err).unwrap_or_else(|| String::from("(no system message)"));
     format!("Error 0x{:08X}: {}", hresult_val, msg.trim_end())
 }
 
@@ -266,7 +272,9 @@ fn format_system_message(code: u32) -> Option<String> {
     let mut buf_ptr: PWSTR = PWSTR::null();
     let len = unsafe {
         FormatMessageW(
-            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            FORMAT_MESSAGE_ALLOCATE_BUFFER
+                | FORMAT_MESSAGE_FROM_SYSTEM
+                | FORMAT_MESSAGE_IGNORE_INSERTS,
             None,
             code,
             0,
@@ -306,12 +314,7 @@ fn write_log(path: &std::path::Path, r: &Resolved, cmd_line: &OsString) -> std::
     if !r.set_env.is_empty() {
         writeln!(f, "set_env ({}):", r.set_env.len())?;
         for (k, v) in &r.set_env {
-            writeln!(
-                f,
-                "  {}={}",
-                k.to_string_lossy(),
-                v.to_string_lossy()
-            )?;
+            writeln!(f, "  {}={}", k.to_string_lossy(), v.to_string_lossy())?;
         }
     }
     writeln!(f, "command line:")?;

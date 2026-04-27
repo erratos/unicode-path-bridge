@@ -98,12 +98,19 @@ struct Resolved {
 }
 
 fn main() -> ExitCode {
+    #[cfg(windows)]
+    std::panic::set_hook(Box::new(|info| {
+        win::message_box("eupb — internal error", &info.to_string(), true);
+    }));
+
     // Peek for --quiet-errors before parsing so we can suppress dialogs
     // even when clap itself rejects the argument set.
+    // Accept both `--quiet-errors` and `--quiet-errors=<value>`.
     let raw_args: Vec<OsString> = std::env::args_os().skip(1).collect();
-    let quiet_early = raw_args
-        .iter()
-        .any(|a| a == "--quiet-errors");
+    let quiet_early = raw_args.iter().any(|a| {
+        let s = a.to_string_lossy();
+        s == "--quiet-errors" || s.starts_with("--quiet-errors=")
+    });
 
     let parsed = match Cli::try_parse() {
         Ok(c) => c,
@@ -151,7 +158,10 @@ fn main() -> ExitCode {
             if show_errors {
                 show_dialog_error(
                     "eupb — target not found",
-                    &format!("Target program not found: {}", target_name.to_string_lossy()),
+                    &format!(
+                        "Target program not found: {}",
+                        target_name.to_string_lossy()
+                    ),
                 );
             }
             return ExitCode::from(2);
@@ -242,7 +252,9 @@ fn resolve_executable(name: &OsStr, canonicalize: bool) -> Option<PathBuf> {
     if name_str.contains('/') || name_str.contains('\\') {
         return if as_path.is_file() {
             if canonicalize {
-                std::fs::canonicalize(as_path).ok().or_else(|| Some(as_path.to_path_buf()))
+                std::fs::canonicalize(as_path)
+                    .ok()
+                    .or_else(|| Some(as_path.to_path_buf()))
             } else {
                 Some(as_path.to_path_buf())
             }
@@ -252,8 +264,8 @@ fn resolve_executable(name: &OsStr, canonicalize: bool) -> Option<PathBuf> {
     }
 
     let has_ext = as_path.extension().is_some();
-    let pathext_os = std::env::var_os("PATHEXT")
-        .unwrap_or_else(|| OsString::from(".EXE;.CMD;.BAT;.COM"));
+    let pathext_os =
+        std::env::var_os("PATHEXT").unwrap_or_else(|| OsString::from(".EXE;.CMD;.BAT;.COM"));
     let pathext = pathext_os.to_string_lossy();
     let exts: Vec<&str> = pathext.split(';').filter(|s| !s.is_empty()).collect();
 

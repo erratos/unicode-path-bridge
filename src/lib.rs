@@ -42,24 +42,18 @@ pub fn escape_arg_wide(arg: &[u16]) -> Vec<u16> {
         if c == BACKSLASH {
             backslashes += 1;
         } else if c == QUOTE {
-            for _ in 0..(backslashes * 2 + 1) {
-                out.push(BACKSLASH);
-            }
+            out.extend(std::iter::repeat(BACKSLASH).take(backslashes * 2 + 1));
             out.push(QUOTE);
             backslashes = 0;
         } else {
-            for _ in 0..backslashes {
-                out.push(BACKSLASH);
-            }
+            out.extend(std::iter::repeat(BACKSLASH).take(backslashes));
             out.push(c);
             backslashes = 0;
         }
     }
 
     // Trailing backslashes before the closing quote must be doubled.
-    for _ in 0..(backslashes * 2) {
-        out.push(BACKSLASH);
-    }
+    out.extend(std::iter::repeat(BACKSLASH).take(backslashes * 2));
     out.push(QUOTE);
     out
 }
